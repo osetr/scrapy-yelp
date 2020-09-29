@@ -11,7 +11,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 load_dotenv(find_dotenv())
 
 
-class QuotesSpider(scrapy.Spider):
+class YelpSpider(scrapy.Spider):
     name = "yelp"
 
     def parse(self, response):
