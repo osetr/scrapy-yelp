@@ -51,7 +51,7 @@ class QuotesSpider(scrapy.Spider):
             "categories": categories,
             "schedule": schedule,
             "read_more": read_more,
-            "am_and_more": amenities_and_more,
+            "amenitites_and_more": amenities_and_more,
         }
 
     def get_api_info(self, response, business_id):
@@ -96,7 +96,7 @@ class QuotesSpider(scrapy.Spider):
     def parse_title(self, response, api_info):
         # following this xpath is reliable because there is no h1 tags anymore
         business_title = response.xpath(
-            '//h1[@class="lemon--h1__373c0__2ZHSL heading--h1__373c0__dvYgw undefined heading--inline__373c0__10ozy"]/text()'
+            '//h1/text()'
         ).get()
         # check match with api_data and return result
         return (
@@ -121,7 +121,7 @@ class QuotesSpider(scrapy.Spider):
     def parse_image_url(self, response, api_info):
         # take first image
         business_image_url = response.xpath(
-            '//div[@class="lemon--div__373c0__1mboc photoHeader__373c0__YdvQE border-color--default__373c0__3-ifU"]/*//img/@src'
+            '//a/img/@src'
         ).get()
         # check match with api_data and return result
         return (
@@ -133,7 +133,7 @@ class QuotesSpider(scrapy.Spider):
     def parse_phone_number(self, response, api_info):
         # search <p> tag with text 'Phone number', then search number beside it
         phone_number = response.xpath(
-            "//div[@class='lemon--div__373c0__1mboc arrange-unit__373c0__o3tjT arrange-unit-fill__373c0__3Sfw1 border-color--default__373c0__3-ifU']//p[.='Phone number']/..//p/text()"
+            "//p[.='Phone number']/..//p/text()"
         ).getall()
         try:
             phone_number = phone_number[1]
@@ -151,7 +151,7 @@ class QuotesSpider(scrapy.Spider):
         # search <p> tag with text 'Business website',
         # then search url beside it
         website = response.xpath(
-            "//div[@class='lemon--div__373c0__1mboc arrange-unit__373c0__o3tjT arrange-unit-fill__373c0__3Sfw1 border-color--default__373c0__3-ifU']//p[.='Business website']/..//p/a/@href"
+            "//p[.='Business website']/..//p/a/@href"
         ).get()
         # check match with api_data and return result
         return (
