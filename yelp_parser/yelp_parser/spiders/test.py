@@ -23,29 +23,20 @@ class QuotesSpider(scrapy.Spider):
         # some guarantees of reliability of parsed data.
         api_info = self.get_api_info(response, business_id)
 
+        # following variables include all necessary info to parse
+        # there is special def for each field
         business_title = self.parse_title(response, api_info)
-
         business_url = self.parse_business_url(response, api_info)
-
         business_image_url = self.parse_image_url(response, api_info)
-
         phone_number = self.parse_phone_number(response, api_info)
-
         website = self.parse_website(response, api_info)
-
         location = self.parse_location(response, api_info)
-
         rating = self.parse_rating(response, api_info)
-
         reviews = self.parse_reviews(response, api_info)
-
         categories = self.parse_categories(response, api_info)
-
         schedule = self.parse_schedule(response, api_info)
-
-        more = self.parse_more(response)
-
-        am_and_more = self.parse_am_and_more(response)
+        read_more = self.parse_read_more(response)
+        amenities_and_more = self.parse_amenities_and_more(response)
 
         yield {
             "title": business_title,
@@ -59,15 +50,15 @@ class QuotesSpider(scrapy.Spider):
             "reviews": reviews,
             "categories": categories,
             "schedule": schedule,
-            "more": more,
-            "am_and_more": am_and_more,
+            "read_more": read_more,
+            "am_and_more": amenities_and_more,
         }
-    
+
     def get_api_info(self, response, business_id):
         # getting data from yelp api
         url = "https://api.yelp.com/v3/businesses/" + business_id
         api_key = os.getenv("KEY")
-        if api_key == None:
+        if api_key is None:
             return None
         headers = {"Authorization": "Bearer %s" % api_key}
         return json.loads(requests.get(url, headers=headers).text)
@@ -77,7 +68,7 @@ class QuotesSpider(scrapy.Spider):
             Return data from api if parsed data doesn't match api data,
             otherwise return parsed data
         """
-        if parsed_data != None:
+        if parsed_data is not None:
             return parsed_data
         else:
             self.log(
@@ -93,7 +84,8 @@ class QuotesSpider(scrapy.Spider):
         # so we can just extract all those cases and definitely we will be
         # able to extract id from them, unless we got a big changes on the
         # page, after which all cases were lost.
-        occurrences = response.xpath("//*/@href").re(r"/biz/[a-zA-Z0-9-]*\?")
+        occurrences = (response.xpath("//*/@href")
+                               .re(r"/biz/[a-zA-Z0-9-]*\?"))
         if len(occurrences) == 0:
             self.log("Issue: Current markup does not allow extract id!")
 
@@ -121,7 +113,9 @@ class QuotesSpider(scrapy.Spider):
         business_url = response.request.url
         # check match with api_data and return result
         return (
-            self.check_api(business_url, api_info["url"]) if api_info else business_url
+            self.check_api(business_url, api_info["url"])
+            if api_info
+            else business_url
         )
 
     def parse_image_url(self, response, api_info):
@@ -154,12 +148,17 @@ class QuotesSpider(scrapy.Spider):
         )
 
     def parse_website(self, response, api_info):
-        # search <p> tag with text 'Business website', then search url beside it
+        # search <p> tag with text 'Business website',
+        # then search url beside it
         website = response.xpath(
             "//div[@class='lemon--div__373c0__1mboc arrange-unit__373c0__o3tjT arrange-unit-fill__373c0__3Sfw1 border-color--default__373c0__3-ifU']//p[.='Business website']/..//p/a/@href"
         ).get()
         # check match with api_data and return result
-        return self.check_api(website, api_info["url"]) if api_info else website
+        return (
+            self.check_api(website, api_info["url"])
+            if api_info
+            else website
+        )
 
     def parse_location(self, response, api_info):
         # search addredd tag. it's only on the page
@@ -178,33 +177,32 @@ class QuotesSpider(scrapy.Spider):
             print("Something went wrong")
             location = None
         # check match with api_data and return result
-        return self.check_api(location, api_info["location"]) if api_info else location
+        return (
+            self.check_api(location, api_info["location"])
+            if api_info
+            else location
+        )
 
     def parse_rating(self, response, api_info):
         rating = response.xpath(
             '//div[contains(@aria-label, "rating")]/@aria-label'
         ).get()
         # check match with api_data and return result
-        return self.check_api(rating, api_info["rating"]) if api_info else rating
+        return (
+            self.check_api(rating, api_info["rating"])
+            if api_info
+            else rating
+        )
 
     def parse_reviews(self, response, api_info):
-        reviews = response.xpath('//p[contains(text(), "reviews")]/text()').get()
+        reviews = response.xpath(
+            '//p[contains(text(), "reviews")]/text()'
+        ).get()
         # check match with api_data and return result
         return (
-            self.check_api(reviews, api_info["review_count"]) if api_info else reviews
-        )
-
-    def parse_categories(self, response, api_info):
-        categories = response.xpath(
-            '//a[contains(text(), "Edit")]/../span/span/a/text()'
-        ).getall()
-        if len(categories) == 0:
-            categories = None
-        # check match with api_data and return result
-        return (
-            self.check_api(categories, api_info["categories"])
+            self.check_api(reviews, api_info["review_count"])
             if api_info
-            else categories
+            else reviews
         )
 
     def parse_categories(self, response, api_info):
@@ -212,7 +210,6 @@ class QuotesSpider(scrapy.Spider):
             '//a[contains(text(), "Edit")]/../span/span/a/text()'
         ).getall()
         if len(categories) == 0:
-            print("Something went wrong")
             categories = None
         # check match with api_data and return result
         return (
@@ -234,9 +231,13 @@ class QuotesSpider(scrapy.Spider):
             print("Something went wrong")
             schedule = None
         # check match with api_data and return result
-        return self.check_api(schedule, api_info["hours"]) if api_info else schedule
+        return (
+            self.check_api(schedule, api_info["hours"])
+            if api_info
+            else schedule
+        )
 
-    def parse_more(self, response):
+    def parse_read_more(self, response):
         data = {}
         self.driver = webdriver.Chrome(ChromeDriverManager().install())
         self.driver.get(response.request.url)
@@ -270,7 +271,7 @@ class QuotesSpider(scrapy.Spider):
         self.driver.close()
         return data
 
-    def parse_am_and_more(self, response):
+    def parse_amenities_and_more(self, response):
         data = ""
         self.driver = webdriver.Chrome(ChromeDriverManager().install())
         self.driver.get(response.request.url)
@@ -286,32 +287,3 @@ class QuotesSpider(scrapy.Spider):
                 data += point.text + ", "
         self.driver.close()
         return data
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    
-
-
-
-
-
-
