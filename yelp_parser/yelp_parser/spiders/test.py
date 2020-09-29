@@ -94,7 +94,8 @@ class QuotesSpider(scrapy.Spider):
         return id
 
     def parse_title(self, response, api_info):
-        # following this xpath is reliable because there is no h1 tags anymore
+        # following xpath is reliable because
+        # there is no h1 tags anymore
         business_title = response.xpath(
             '//h1/text()'
         ).get()
@@ -131,7 +132,8 @@ class QuotesSpider(scrapy.Spider):
         )
 
     def parse_phone_number(self, response, api_info):
-        # search <p> tag with text 'Phone number', then search number beside it
+        # search <p> tag with text 'Phone number',
+        # then search number beside it
         phone_number = response.xpath(
             "//p[.='Phone number']/..//p/text()"
         ).getall()
@@ -237,26 +239,36 @@ class QuotesSpider(scrapy.Spider):
             else schedule
         )
 
+    # following parsers are a little bit specific
+    # because webdriver is required to extract data.
+    # it's necessary, cause Scrapy cannot interpret javascript,
+    # but for getting info on the site, users are required
+    # to click special button
     def parse_read_more(self, response):
         data = {}
+
+        # start driver
         self.driver = webdriver.Chrome(ChromeDriverManager().install())
         self.driver.get(response.request.url)
+
+        # click special button to get info on the page
         self.driver.find_element_by_xpath(
             '//button/div/span[contains(text(), "Read more")]'
         ).click()
+
         headers = self.driver.find_elements_by_xpath(
             '//h2[contains(text(), "From the business")]/../../..//h5'
         )
-
-        for header in headers:
-            data.update({header.text: ""})
-
         paragraphs_in_div = self.driver.find_elements_by_xpath(
             '//h2[contains(text(), "From the business")]/../..//h5/../..'
         )
         paragraphs = self.driver.find_elements_by_xpath(
             '//h2[contains(text(), "From the business")]/../..//h5/../../p'
         )
+
+        for header in headers:
+            data.update({header.text: ""})
+
         for paragraph in paragraphs:
             for paragraph_in_div in paragraphs_in_div:
                 new = (
@@ -268,16 +280,23 @@ class QuotesSpider(scrapy.Spider):
                 data[
                     list(data.keys())[paragraphs_in_div.index(paragraph_in_div)]
                 ] += new
+
+        # close driver
         self.driver.close()
         return data
 
     def parse_amenities_and_more(self, response):
         data = ""
+
+        # start driver
         self.driver = webdriver.Chrome(ChromeDriverManager().install())
         self.driver.get(response.request.url)
+
+        # click special button to get info on the page
         self.driver.find_element_by_xpath(
             '//p[contains(text(), "More Attributes")]'
         ).click()
+
         points = self.driver.find_elements_by_xpath(
             '//h4[contains(text(), "Amenities and More")]/../../..//div//span'
         )
@@ -285,5 +304,7 @@ class QuotesSpider(scrapy.Spider):
         for point in points:
             if pattern.match(point.text):
                 data += point.text + ", "
+
+        # close driver
         self.driver.close()
         return data
