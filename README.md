@@ -4,4 +4,6 @@
   
 `scrapy parse https://www.yelp.com/biz/german-auto-sport-berkeley --spider=yelp -o german_auto_sport.json`
 
+(don't forget to download required modules from requirements to your environment)
+
 Instead of test web page, you can pick desirable. But notice, that this parser is able only work with businesses pages, so links gonna look like test one. You can pick your own file name as well.
