@@ -5,6 +5,7 @@ import requests
 from dotenv import load_dotenv, find_dotenv
 import os
 from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
 
 load_dotenv(find_dotenv())
@@ -293,17 +294,23 @@ class QuotesSpider(scrapy.Spider):
         self.driver.get(response.request.url)
 
         # click special button to get info on the page
-        self.driver.find_element_by_xpath(
-            '//p[contains(text(), "More Attributes")]'
-        ).click()
+        try:
+            self.driver.find_element_by_xpath(
+                '//p[contains(text(), "More Attributes")]'
+            ).click()
+        except NoSuchElementException:
+            print("there is no special button")
 
-        points = self.driver.find_elements_by_xpath(
-            '//h4[contains(text(), "Amenities and More")]/../../..//div//span'
-        )
-        pattern = re.compile(r"[a-zA-Z ]+")
-        for point in points:
-            if pattern.match(point.text):
-                data += point.text + ", "
+        try:
+            points = self.driver.find_elements_by_xpath(
+                '//h4[contains(text(), "Amenities and More")]/../../..//div//span'
+            )
+            pattern = re.compile(r"[a-zA-Z ]+")
+            for point in points:
+                if pattern.match(point.text):
+                    data += point.text + ", "
+        except NoSuchElementException:
+            print("There is no such element")
 
         # close driver
         self.driver.close()
